@@ -1,1 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ランダムグループ分け</title>
+  <meta name="description" content="人数と男女比をそろえて、毎回ちがう組み合わせのグループをつくる授業用ツール">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-size="m">
 
+  <header class="app-header">
+    <h1>ランダムグループ分け</h1>
+    <p>人数と男女比をそろえて、毎回ちがう組み合わせをつくります。</p>
+  </header>
+
+  <main class="container">
+
+    <details class="guide" open>
+      <summary>使い方</summary>
+      <ol>
+        <li>人数を入力する</li>
+        <li>「グループ分けする」を押す</li>
+        <li>結果を確認する</li>
+      </ol>
+      <p>気に入らなければ「もう一度グループ分け」を押してください。</p>
+    </details>
+
+    <section class="panel" aria-labelledby="inputTitle">
+      <h2 id="inputTitle">STEP 1　人数を入力</h2>
+
+      <div class="tabs" role="group" aria-label="入力方法">
+        <button type="button" id="tabSimple" class="tab" aria-pressed="true">かんたん（人数だけ）</button>
+        <button type="button" id="tabRoster" class="tab" aria-pressed="false">名簿（番号を入力）</button>
+      </div>
+
+      <div id="errorBox" class="error-box" role="alert" hidden></div>
+
+      <form id="inputForm" novalidate>
+        <div class="fields">
+          <div class="field">
+            <label for="totalInput">全体の人数</label>
+            <div class="input-wrap"><input id="totalInput" type="text" inputmode="numeric" autocomplete="off" value="25"><span>人</span></div>
+          </div>
+          <div class="field">
+            <label for="boysInput">男子の人数</label>
+            <div class="input-wrap"><input id="boysInput" type="text" inputmode="numeric" autocomplete="off" value="13"><span>人</span></div>
+          </div>
+          <div class="field">
+            <label for="girlsInput">女子の人数</label>
+            <div class="input-wrap"><input id="girlsInput" type="text" inputmode="numeric" autocomplete="off" value="12"><span>人</span></div>
+          </div>
+        </div>
+
+        <div id="rosterBox" class="roster" hidden>
+          <p class="note">生徒番号をカンマ・スペース・改行で区切って入力します（例：1, 3, 5-9）。人数は番号から自動で数えます。欠席の番号は入れないでください。</p>
+          <div class="roster-grid">
+            <div class="field">
+              <label for="boysList">男子の番号</label>
+              <textarea id="boysList" rows="4" placeholder="1, 3, 5, 7, 9"></textarea>
+            </div>
+            <div class="field">
+              <label for="girlsList">女子の番号</label>
+              <textarea id="girlsList" rows="4" placeholder="2, 4, 6, 8, 10"></textarea>
+            </div>
+          </div>
+          <p id="rosterInfo" class="note" aria-live="polite"></p>
+          <div class="row">
+            <button type="button" id="saveRosterBtn" class="btn btn-small">名簿を保存</button>
+            <button type="button" id="loadRosterBtn" class="btn btn-small">保存した名簿を呼び出す</button>
+            <span id="rosterStatus" class="status" aria-live="polite"></span>
+          </div>
+        </div>
+
+        <fieldset class="method">
+          <legend>分け方</legend>
+          <label class="choice"><input type="radio" name="method" id="methodSize" value="size" checked> 1グループの人数で決める</label>
+          <label class="choice"><input type="radio" name="method" id="methodCount" value="count"> グループ数で決める</label>
+        </fieldset>
+
+        <div class="fields fields-single">
+          <div class="field">
+            <label for="valueInput" id="valueLabel">1グループの人数</label>
+            <div class="input-wrap"><input id="valueInput" type="text" inputmode="numeric" autocomplete="off" value="6"><span id="valueUnit">人</span></div>
+          </div>
+        </div>
+
+        <p id="liveHint" class="hint" aria-live="polite"></p>
+
+        <div class="options">
+          <div class="field">
+            <label for="levelSelect">男女比のそろえ方</label>
+            <select id="levelSelect">
+              <option value="strict" selected>できるだけ均等にする（最優先）</option>
+              <option value="normal">重視する（±1人のゆれを許す）</option>
+              <option value="random">考えない（完全ランダム）</option>
+            </select>
+          </div>
+          <label class="choice"><input type="checkbox" id="avoidCheck" checked> 前回と同じメンバーの組み合わせをできるだけ避ける</label>
+        </div>
+
+        <button type="submit" id="runBtn" class="btn btn-primary btn-xl">グループ分けする</button>
+      </form>
+    </section>
+
+    <section id="resultSection" class="result" aria-labelledby="resultTitle" hidden>
+      <div class="result-head">
+        <h2 id="resultTitle">グループ分け結果</h2>
+        <p id="resultMeta" class="result-meta"></p>
+      </div>
+
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="表示モード">
+          <label class="seg-item"><input type="radio" name="view" id="viewTeacher" value="teacher" checked><span>教師用</span></label>
+          <label class="seg-item"><input type="radio" name="view" id="viewStudent" value="student"><span>生徒提示用</span></label>
+        </div>
+        <label class="choice" id="genderRow"><input type="checkbox" id="showGender" checked> 男女構成を表示する</label>
+        <label class="size-select">文字サイズ
+          <select id="fontSize">
+            <option value="m">標準</option>
+            <option value="l">大</option>
+            <option value="xl">特大</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="groups" class="groups" aria-live="polite"></div>
+
+      <div class="actions">
+        <button type="button" id="againBtn" class="btn btn-primary">もう一度グループ分け</button>
+        <button type="button" id="copyBtn" class="btn">結果をコピー</button>
+        <button type="button" id="resetHistoryBtn" class="btn btn-quiet">前回までの記録を消す</button>
+        <span id="copyStatus" class="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
